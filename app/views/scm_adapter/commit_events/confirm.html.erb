@@ -1,0 +1,18 @@
+<% content_for :header_tags do %>
+  <%= stylesheet_link_tag 'scm_adapter', plugin: 'scm_adapter' %>
+<% end %>
+
+<h2><%= t("scm_adapter.commit_events.confirm.title") %></h2>
+<p><%= t("scm_adapter.commit_events.confirm.issue") %>: <%= link_to @event.issue.subject, issue_path(@event.issue) %></p>
+<p><%= t("scm_adapter.commit_events.confirm.commit") %>: <%= h @event.sha %> (<%= h @event.provider %>)</p>
+
+<%= form_with url: scm_adapter_commit_event_delete_path(@event), method: :post, local: true do %>
+  <p>
+    <label for="reason"><%= t("scm_adapter.commit_events.confirm.reason_label") %></label><br/>
+    <%= text_area_tag :reason, nil, rows: 3, cols: 60, required: true %>
+  </p>
+  <p>
+    <%= submit_tag t("scm_adapter.commit_events.confirm.delete"), data: { confirm: t("scm_adapter.commit_events.confirm.delete_confirm") } %>
+    <%= link_to t("scm_adapter.commit_events.confirm.cancel"), issue_path(@event.issue) %>
+  </p>
+<% end %>

@@ -1,0 +1,168 @@
+<% settings = Setting.plugin_scm_adapter || {} %>
+<% defaults = Redmine::Plugin.find(:scm_adapter).settings[:default] || {} %>
+
+<%# Hilfsfunktionen zum robusten JSON-Handling, damit eingegebene Strings nicht mehrfach ge-escaped werden %>
+<% def safe_parse_json(val, fallback)
+     case val
+     when String
+       begin
+         parsed = JSON.parse(val)
+         parsed.is_a?(Hash) || parsed.is_a?(Array) ? parsed : fallback
+       rescue JSON::ParserError
+         fallback
+       end
+     when Hash, Array
+       val
+     else
+       fallback
+     end
+   end %>
+
+<% issue_map      = safe_parse_json(settings['issue_status_mapping'], defaults['issue_status_mapping'] || {}) %>
+<% close_keywords = safe_parse_json(settings['close_keywords'], defaults['close_keywords'] || []) %>
+
+<% missing_webhook_secrets = settings['gitlab_webhook_secret'].to_s.empty? || settings['github_webhook_secret'].to_s.empty? %>
+
+<% if missing_webhook_secrets %>
+  <div class="flash warning"><%= t("scm_adapter.settings_page.webhook_warning") %></div>
+<% end %>
+
+<div class="box tabular">
+  <h3><%= t("scm_adapter.settings.gitlab") %></h3>
+  <p>
+    <label><%= t("scm_adapter.settings_page.base_url") %></label>
+    <%= text_field_tag 'settings[gitlab_base_url]', settings['gitlab_base_url'], size: 60 %>
+  </p>
+  <p>
+    <label><%= t("scm_adapter.settings_page.clone_base_url_optional") %></label>
+    <%= text_field_tag 'settings[gitlab_clone_base_url]', settings['gitlab_clone_base_url'], size: 60, placeholder: "#{settings['gitlab_base_url']}/..." %>
+  </p>
+  <p>
+    <label><%= t("scm_adapter.settings_page.personal_access_token") %></label>
+    <%= password_field_tag 'settings[gitlab_token]', settings['gitlab_token'], size: 60, autocomplete: "off" %>
+  </p>
+  <p>
+    <label><%= t("scm_adapter.settings_page.webhook_secret") %></label>
+    <%= text_field_tag 'settings[gitlab_webhook_secret]', settings['gitlab_webhook_secret'], size: 60 %>
+  </p>
+  <p>
+    <label><%= t("scm_adapter.settings_page.webhook_mode") %></label>
+    <%= select_tag 'settings[gitlab_webhook_mode]', options_for_select([
+      [t("scm_adapter.settings_page.webhook_mode_both"), 'both'],
+      [t("scm_adapter.settings_page.webhook_mode_plugin_only"), 'plugin_only'],
+      [t("scm_adapter.settings_page.webhook_mode_core_only"), 'core_only']
+    ], settings['gitlab_webhook_mode'] || settings['webhook_mode'] || defaults['gitlab_webhook_mode'] || defaults['webhook_mode'] || 'both') %>
+    <br/>
+    <em><%= t("scm_adapter.settings_page.webhook_mode_help") %></em>
+  </p>
+  <p>
+    <button id="test-gitlab" type="button" class="button"><%= t("scm_adapter.settings_page.test_gitlab") %></button>
+    <span id="test-gitlab-result"></span>
+  </p>
+
+  <hr/>
+
+  <h3><%= t("scm_adapter.settings.github") %></h3>
+  <p>
+    <label><%= t("scm_adapter.settings_page.base_url") %></label>
+    <%= text_field_tag 'settings[github_base_url]', settings['github_base_url'], size: 60 %>
+  </p>
+  <p>
+    <label><%= t("scm_adapter.settings_page.clone_base_url") %></label>
+    <%= text_field_tag 'settings[github_clone_base_url]', settings['github_clone_base_url'], size: 60 %>
+  </p>
+  <p>
+    <label><%= t("scm_adapter.settings_page.token") %></label>
+    <%= password_field_tag 'settings[github_token]', settings['github_token'], size: 60, autocomplete: "off" %>
+  </p>
+  <p>
+    <label><%= t("scm_adapter.settings_page.webhook_secret") %></label>
+    <%= text_field_tag 'settings[github_webhook_secret]', settings['github_webhook_secret'], size: 60 %>
+  </p>
+  <p>
+    <label><%= t("scm_adapter.settings_page.webhook_mode") %></label>
+    <%= select_tag 'settings[github_webhook_mode]', options_for_select([
+      [t("scm_adapter.settings_page.webhook_mode_both"), 'both'],
+      [t("scm_adapter.settings_page.webhook_mode_plugin_only"), 'plugin_only'],
+      [t("scm_adapter.settings_page.webhook_mode_core_only"), 'core_only']
+    ], settings['github_webhook_mode'] || settings['webhook_mode'] || defaults['github_webhook_mode'] || defaults['webhook_mode'] || 'both') %>
+    <br/>
+    <em><%= t("scm_adapter.settings_page.webhook_mode_help") %></em>
+  </p>
+  <p>
+    <button id="test-github" type="button" class="button"><%= t("scm_adapter.settings_page.test_github") %></button>
+    <span id="test-github-result"></span>
+  </p>
+
+</div>
+
+<div class="box tabular">
+  <h3><%= t("scm_adapter.settings.mapping") %></h3>
+  <p>
+    <label><%= t("scm_adapter.settings_page.issue_status_mapping") %></label>
+    <%= text_area_tag 'settings[issue_status_mapping]', JSON.pretty_generate(issue_map), rows: 5, cols: 80 %>
+  </p>
+  <p>
+    <label><%= t("scm_adapter.settings_page.close_keywords") %></label>
+    <%= text_field_tag 'settings[close_keywords]', close_keywords.to_json, size: 80 %>
+  </p>
+  <p>
+    <label><%= t("scm_adapter.settings_page.sidekiq_enabled") %></label>
+    <%= check_box_tag 'settings[sidekiq_enabled]', '1', settings['sidekiq_enabled'] %>
+  </p>
+  <p>
+    <label><%= t("scm_adapter.settings_page.mirror_base_path") %></label>
+    <%= text_field_tag 'settings[mirror_base_path]', settings['mirror_base_path'], size: 60 %>
+  </p>
+  <p>
+    <label><%= t("scm_adapter.settings_page.git_binary") %></label>
+    <%= text_field_tag 'settings[git_binary]', settings['git_binary'], size: 30 %>
+  </p>
+  <p>
+    <label><%= t("scm_adapter.settings_page.comment_back_enabled") %></label>
+    <%= check_box_tag 'settings[comment_back_enabled]', '1', settings['comment_back_enabled'] %>
+  </p>
+  <p>
+    <label><%= t("scm_adapter.settings_page.issue_commits_position") %></label>
+    <%= select_tag 'settings[issue_commits_position]', options_for_select([[t("scm_adapter.settings_page.issue_commits_position_top"), 'top'], [t("scm_adapter.settings_page.issue_commits_position_bottom"), 'bottom']], settings['issue_commits_position'] || defaults['issue_commits_position'] || 'bottom') %>
+  </p>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const strings = {
+            testing: "<%= j t('scm_adapter.settings_page.test_running') %>",
+            errorPrefix: "<%= j t('scm_adapter.settings_page.test_error_prefix') %>",
+            ok: "<%= j t('scm_adapter.settings_page.test_ok') %>",
+            okWithLogin: "<%= j t('scm_adapter.settings_page.test_ok_with_login', login: '%{login}') %>"
+        };
+
+        const postJSON = async (url) => {
+            const token = document.querySelector('meta[name="csrf-token"]').content;
+            const res = await fetch(url, { method: "POST", headers: { "X-CSRF-Token": token, "Accept": "application/json" }});
+            return res.json();
+        };
+
+        document.getElementById("test-gitlab").addEventListener("click", async () => {
+            const out = document.getElementById("test-gitlab-result");
+            out.textContent = strings.testing;
+            try {
+                const data = await postJSON("/scm_adapter/test/gitlab");
+                out.textContent = data.ok ? strings.ok : (strings.errorPrefix + data.error);
+            } catch (e) { out.textContent = strings.errorPrefix + e; }
+        });
+
+        document.getElementById("test-github").addEventListener("click", async () => {
+            const out = document.getElementById("test-github-result");
+            out.textContent = strings.testing;
+            try {
+                const data = await postJSON("/scm_adapter/test/github");
+                if (data.ok) {
+                    out.textContent = strings.okWithLogin.replace("%{login}", data.login);
+                } else {
+                    out.textContent = strings.errorPrefix + data.error;
+                }
+            } catch (e) { out.textContent = strings.errorPrefix + e; }
+        });
+    });
+</script>

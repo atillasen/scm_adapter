@@ -1,0 +1,18 @@
+# frozen_string_literal: true
+class CreateScmAdapterSyncRules < ActiveRecord::Migration[6.1]
+  def change
+    create_table :scm_adapter_sync_rules do |t|
+      t.integer :project_id
+      if connection.adapter_name.downcase.start_with?('mysql')
+        t.json  :issue_status_mapping, null: false, default: {}
+      else
+        t.jsonb :issue_status_mapping, null: false, default: {}
+      end
+      t.jsonb   :close_keywords, null: false, default: []
+
+      t.timestamps
+    end
+    add_index :scm_adapter_sync_rules, :project_id
+  end
+end
+

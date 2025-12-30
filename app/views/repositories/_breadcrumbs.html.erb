@@ -1,0 +1,35 @@
+<%
+dirs, raw_paths, raw_filename = respond_to?(:compact_breadcrumbs) ? compact_breadcrumbs(path, kind) : [path.to_s.split("/"), path.to_s.split("/").each_index.map { |i| path.to_s.split("/")[0..i].join("/") }, (kind == "file" ? path.to_s.split("/").last : nil)]
+
+# Entferne den Dateinamen komplett aus der Breadcrumb-Anzeige
+if raw_filename
+  dirs = dirs[0...-1] if dirs.any? && dirs.last.to_s.include?(".")
+  raw_paths = raw_paths[0...-1] if raw_paths.size > dirs.size
+end
+
+breadcrumbs = []
+root_label = @project.present? ? (@project.name.presence || @project.identifier) : (@repository.identifier.presence || 'root')
+breadcrumbs << link_to(
+  root_label, :action => 'show',
+  :id => @project, :repository_id => @repository.identifier_param,
+  :path => nil, :rev => @rev)
+
+dirs.each_with_index do |dir, idx|
+  next if dir.blank?
+  breadcrumbs << link_to(dir, :action => 'show', :id => @project,
+    :repository_id => @repository.identifier_param,
+    :path => to_path_param(raw_paths[idx]), :rev => @rev)
+end
+
+%>
+<%= breadcrumbs.join(tag.span('/', :class => 'separator compact')).html_safe -%>
+<% 
+  # @rev is revsion or Git and Mercurial branch or tag.
+  # For Mercurial *tip*, @rev and @changeset are nil.
+  rev_text = @changeset.nil? ? @rev : format_revision(@changeset)
+%>
+<%= " @ #{rev_text}" unless rev_text.blank? -%>
+<% if raw_filename.present? %>
+  <span style="margin-left:8px;"><%= raw_filename %></span>
+<% end %>
+<% html_title(with_leading_slash(path)) %>

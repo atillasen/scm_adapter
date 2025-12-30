@@ -1,0 +1,70 @@
+<% issue = local_assigns[:issue] || @issue %>
+<% events = ScmAdapter::CommitEvent.active.where(issue_id: issue.id).order(pushed_at: :desc, created_at: :desc).limit(20) %>
+<% if events.any? %>
+  <div class="box" id="scm-adapter-commits">
+    <h3><%= t("scm_adapter.commits.heading") %></h3>
+    <table class="list">
+      <thead>
+        <tr>
+          <th><%= t("scm_adapter.commits.provider") %></th>
+          <th><%= t("scm_adapter.commits.commit") %></th>
+          <th><%= t("scm_adapter.commits.merge_request") %></th>
+          <th><%= t("scm_adapter.commits.branch") %></th>
+          <th><%= t("scm_adapter.commits.message") %></th>
+          <th><%= t("scm_adapter.commits.author") %></th>
+          <th><%= t("scm_adapter.commits.time") %></th>
+          <th><%= t("scm_adapter.commits.action") %></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% events.each do |ev| %>
+          <tr>
+            <td><%= h ev.provider %></td>
+            <td>
+              <% sha_short = ev.sha.to_s[0,8] %>
+              <% if ev.url.present? %>
+                <%= link_to sha_short, ev.url, target: "_blank", rel: "noopener" %>
+              <% else %>
+                <%= h(sha_short) %>
+              <% end %>
+              <% repo = issue.project&.repository %>
+              <% if repo.present? %>
+                <% local_path = "/projects/#{issue.project.identifier}/repository" %>
+                <% local_path += "/#{repo.identifier}" if repo.identifier.present? %>
+                <% local_path += "/revisions/#{ev.sha}" %>
+                &nbsp;(<%= link_to t("scm_adapter.commits.mirror"), local_path %>)
+              <% end %>
+            </td>
+            <td>
+              <% if ev.merge_request_url.present? %>
+                <%= link_to(h(ev.merge_request_title.presence || "MR/PR ##{ev.merge_request_iid}"), ev.merge_request_url, target: "_blank", rel: "noopener") %>
+              <% else %>
+                -
+              <% end %>
+            </td>
+            <td><%= h(ev.branch.presence || "-") %></td>
+            <td><%= h truncate(ev.message.to_s, length: 120) %></td>
+            <td><%= h(ev.author.presence || "-") %></td>
+            <% ts = ev.pushed_at %>
+            <% ts = ts.to_time if ts.respond_to?(:to_time) %>
+            <% ts = Time.zone.parse(ts.to_s) if ts.is_a?(String) %>
+            <td>
+              <% if ts %>
+                <%= format_time(ts) %>
+              <% else %>
+                -
+              <% end %>
+            </td>
+            <td>
+              <% if User.current.allowed_to?(:manage_repository, issue.project) %>
+                <%= link_to t("scm_adapter.commits.delete"), scm_adapter_commit_event_confirm_path(ev) %>
+              <% else %>
+                -
+              <% end %>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+<% end %>

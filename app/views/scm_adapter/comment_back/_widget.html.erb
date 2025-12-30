@@ -1,0 +1,90 @@
+<div class="box" id="scm-adapter-comment-back" style="margin-top: 16px;">
+  <h3>Kommentar an Remote senden</h3>
+  <%= form_with url: scm_adapter_comment_back_path, method: :post, local: true do %>
+    <%= hidden_field_tag :project_id, project.id %>
+    <%= hidden_field_tag :repository_id, repository.id %>
+    <%= hidden_field_tag :revision, changeset.revision %>
+    <p>
+      <%= text_area_tag :comment_body, "", rows: 3, cols: 80, required: true, placeholder: "Kommentar wird als Commit-Note an GitLab/GitHub gesendet", id: "comment_back_body" %>
+      <label style="margin-left: 6px;">
+        <input type="checkbox" id="comment-back-preview-toggle" />
+        Markdown-Vorschau
+      </label>
+    </p>
+    <p><%= submit_tag "Kommentar senden", class: "button" %></p>
+  <% end %>
+  <div id="comment-back-preview" class="wiki" style="display:none; margin-top:10px; border:1px solid #ddd; padding:8px;"></div>
+  <% if comments.any? %>
+    <div class="remote-comments" style="margin-top: 10px;">
+      <strong>Remote-Kommentare:</strong>
+      <table class="list" style="width: 100%; table-layout: fixed;">
+        <thead>
+          <tr>
+            <th style="width: 180px;">Autor</th>
+            <th style="width: 160px;">Zeit</th>
+            <th style="text-align: left;">Kommentar</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% comments.each do |c| %>
+            <tr>
+              <td><%= h(c[:author].presence || "?") %></td>
+              <td><%= h c[:created_at].to_s %></td>
+              <td style="white-space: pre-wrap; text-align: left;"><%= textilizable(c[:body].to_s) %></td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  <% end %>
+</div>
+
+<script>
+  (function() {
+    const toggle = document.getElementById("comment-back-preview-toggle");
+    const textarea = document.getElementById("comment_back_body");
+    const preview = document.getElementById("comment-back-preview");
+    if (!toggle || !textarea || !preview) return;
+
+    async function updatePreview() {
+      const body = textarea.value;
+      if (!body.trim()) {
+        preview.style.display = "none";
+        preview.innerHTML = "";
+        return;
+      }
+      try {
+        const token = document.querySelector('meta[name="csrf-token"]').content;
+        const res = await fetch("<%= scm_adapter_comment_back_preview_path %>", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+            "X-CSRF-Token": token,
+            "Accept": "text/html"
+          },
+          body: new URLSearchParams({
+            comment_body: body,
+            project_id: "<%= project.id %>",
+            repository_id: "<%= repository.id %>"
+          })
+        });
+        preview.innerHTML = await res.text();
+        preview.style.display = "block";
+      } catch(e) {
+        preview.innerHTML = "Vorschau fehlgeschlagen: " + e;
+        preview.style.display = "block";
+      }
+    }
+
+    toggle.addEventListener("change", function() {
+      if (toggle.checked) {
+        updatePreview();
+        textarea.addEventListener("input", updatePreview);
+      } else {
+        preview.style.display = "none";
+        preview.innerHTML = "";
+        textarea.removeEventListener("input", updatePreview);
+      }
+    });
+  })();
+</script>

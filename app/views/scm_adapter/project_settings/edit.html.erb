@@ -1,0 +1,19 @@
+<h2><%= t("scm_adapter.project_settings.title") %></h2>
+
+<div class="box tabular">
+  <h3><%= t("scm_adapter.settings.gitlab") %></h3>
+  <%= form_with url: project_scm_adapter_settings_path(@project), method: :put, local: true do |f| %>
+    <p>
+      <label><%= t("scm_adapter.project_settings.clone_label") %></label>
+      <%= text_field_tag 'gitlab[clone_base_url]', (@gitlab_integration&.clone_base_url || ""), size: 60, placeholder: "https://gitlab.example.com/group/project" %>
+    </p>
+
+    <h3><%= t("scm_adapter.settings.github") %></h3>
+    <p>
+      <label><%= t("scm_adapter.project_settings.clone_label") %></label>
+      <%= text_field_tag 'github[clone_base_url]', (@github_integration&.clone_base_url || ""), size: 60, placeholder: "https://github.com/owner/repo" %>
+    </p>
+
+    <p><%= submit_tag t("scm_adapter.project_settings.save"), class: "button" %></p>
+  <% end %>
+</div>
