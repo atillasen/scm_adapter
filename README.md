@@ -29,10 +29,6 @@ Classic:
 3) `bundle exec rake redmine:plugins:migrate NAME=scm_adapter RAILS_ENV=production`
 4) Restart Redmine; run Sidekiq.
 
-Docker (provided):
-1) Adjust `.env.redmine`; use `infrastruktur/docker-compose.redmine.yml`.
-2) `docker compose -f infrastruktur/docker-compose.redmine.yml up --build -d`
-3) Migrations run in entrypoint; Sidekiq service included.
 
 ### Configure
 - Administration → Plugins → SCM Adapter → Configure.
@@ -101,10 +97,6 @@ Klassisch:
 3) `bundle exec rake redmine:plugins:migrate NAME=scm_adapter RAILS_ENV=production`
 4) Redmine neu starten; Sidekiq starten.
 
-Docker (bereitgestellt):
-1) `.env.redmine` anpassen; Compose unter `infrastruktur/docker-compose.redmine.yml`.
-2) `docker compose -f infrastruktur/docker-compose.redmine.yml up --build -d`
-3) Migrationen laufen im Entrypoint; Sidekiq-Service ist enthalten.
 
 ### Konfiguration
 - Administration → Plugins → SCM Adapter → Konfigurieren.
@@ -173,10 +165,6 @@ Klasik:
 3) `bundle exec rake redmine:plugins:migrate NAME=scm_adapter RAILS_ENV=production`
 4) Redmine'i yeniden başlat; Sidekiq'i çalıştır.
 
-Docker (hazır):
-1) `.env.redmine` dosyasını düzenle; `infrastruktur/docker-compose.redmine.yml` kullan.
-2) `docker compose -f infrastruktur/docker-compose.redmine.yml up --build -d`
-3) Migrasyonlar entrypoint'te çalışır; Sidekiq servisi dahildir.
 
 ### Yapılandırma
 - Yönetim → Eklentiler → SCM Adaptörü → Yapılandır.
