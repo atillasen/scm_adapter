@@ -3,5 +3,5 @@ module ScmAdapter
   # Zeitwerk expects a constant matching the file path
   module Version; end
 
-  VERSION = "0.0.1"
+  VERSION = "v1.0.0.1"
 end
